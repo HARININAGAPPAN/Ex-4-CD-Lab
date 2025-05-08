@@ -17,51 +17,56 @@ cd 4.l
 ```
 %{
 #include "y.tab.h"
+#include <string.h>
 %}
 
 %%
-
-"int" { return INT; } 
-"float" { return FLOAT; }
-"double" { return DOUBLE; }
-
-[a-zA-Z][a-zA-Z0-9]* {
-printf("\nIdentifier is %s", yytext); return ID;
-}
-
-. { return yytext[0]; }
-
-\n { return 0; }
-
+[a-zA-Z][a-zA-Z0-9]*    { yylval.str = strdup(yytext); return IDENTIFIER; }
+\n                      { return '\n'; }
+.                       { return yytext[0]; }
 %%
 
-int yywrap() 
-{ 
-return 1;
+int yywrap() {
+    return 1;
 }
+
 ```
 cd4.y
 ```
 %{
 #include <stdio.h>
-/* This YACC program is for recognizing the Expression */
+#include <stdlib.h>
+#include <string.h>
+
+extern int yylex();
+void yyerror(const char *msg);
+
 %}
 
-%token ID INT FLOAT DOUBLE
-%% D: T L;
-L: L ',' ID   | ID;
+%union {
+    char *str;
+}
 
-T: INT | FLOAT | DOUBLE;
+%token <str> IDENTIFIER
 
 %%
-extern FILE *yyin; int main() {
-do {
-yyparse();
-} while (!feof(yyin)); return 0;
+start:
+    IDENTIFIER '\n' {
+        printf("Valid variable: %s\n", $1);
+        free($1);  // clean up strdup memory
+    }
+    ;
+%%
+
+int main() {
+    printf("Enter a variable name:\n");
+    return yyparse();
 }
 
-void yyerror(char *s) { 
+void yyerror(const char *msg) {
+    printf("Invalid variable name\n");
 }
+
 ```
 # Output
 ![Screenshot 2025-05-08 134202](https://github.com/user-attachments/assets/6d57b1ed-93c7-4a27-b5e7-9856f9007b76)
